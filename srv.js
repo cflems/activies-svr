@@ -117,7 +117,11 @@ function process (dobj, client) {
             replyerr(e, client, reject);
           });
         case 'like':
+          // TODO: do this
+          return attsend({'status': 'liked'}, client, resolve, reject);
         case 'unlike':
+          // TODO: also do this
+          return attsend({'status': 'unliked'}, client, resolve, reject);
         case 'myprof': // TODO: during beta, not implemented
         default:
           return replyerr('Unrecognized action keyword.', client, reject);
