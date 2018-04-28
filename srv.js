@@ -1,13 +1,4 @@
-const APP_PORT = 2237;
-const SQL_CFG = {
-  'host': 'localhost',
-  'user': 'activies',
-  'password': 'fux',
-  'database': 'activies',
-  'connectionLimit': 100,
-};
-const SECRET_KEY = '2ETXkmGDUTA4hNm9njHYvHsI9Cmpi5aV';
-
+const {APP_PORT, SQL_CFG, SECRET_KEY} = require('./cfg');
 const Promise = require('bluebird');
 const mysql = Promise.promisifyAll(require('mysql'));
 const fs = Promise.promisifyAll(require('fs'));
