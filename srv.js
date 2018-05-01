@@ -90,16 +90,16 @@ function process (dobj, client) {
           });
         case 'list':
           return valauthkey(dobj.authkey).then(function (uid) {
-            return query('SELECT * FROM posts', []).then(function (result) {
+            return query('SELECT posts.id, posts.title, posts.description, posts.pic, users.username AS user FROM posts LEFT JOIN users ON posts.uid = users.id', []).then(function (result) {
               attsend(result, client, resolve, reject);
             });
-            // TODO: this needs to get more complicated, joins and zone code
+            // TODO: zone code
           }).catch(function (e) {
             return replyerr(e, client, reject);
           });
         case 'post':
           return valauthkey(dobj.authkey).then(function (uid) {
-            return query('INSERT INTO posts (uid, title, desc, location) VALUES ?', [[[uid, dobj.title, dobj.desc, dobj.location]]]).then(function (result) {
+            return query('INSERT INTO posts (uid, title, description, location) VALUES ?', [[[uid, dobj.title, dobj.description, dobj.location]]]).then(function (result) {
               if (result.affectedRows < 1) replyerr('Row could not be inserted.', client, reject);
               attsend({'status': 'ok'}, client, resolve, reject);
             });
@@ -107,9 +107,8 @@ function process (dobj, client) {
             replyerr(e, client, reject);
           });
         case 'show':
-          // TODO: the full SELECT will involve a join
           return valauthkey(dobj.authkey).then(function (uid) {
-            return query('SELECT * FROM posts WHERE id = ? LIMIT 1', [dobj.id], function (result) {
+            return query('SELECT posts.title, posts.location, posts.pic, posts.description, (SELECT COUNT(1) FROM likes WHERE likes.pid = posts.id) AS likes, EXISTS(SELECT 1 FROM likes WHERE likes.uid = ? AND likes.pid = posts.id) AS i_liked FROM posts WHERE posts.id = ? LIMIT 1', [uid, dobj.id]).then(function (result) {
               if (result.length < 1) return attsend({}, client, resolve, reject);
               attsend(result[0], client, resolve, reject);
             });
@@ -118,10 +117,10 @@ function process (dobj, client) {
           });
         case 'like':
           // TODO: do this
-          return attsend({'status': 'liked'}, client, resolve, reject);
+          return attsend({'status': 'liked', 'likes': 13}, client, resolve, reject);
         case 'unlike':
           // TODO: also do this
-          return attsend({'status': 'unliked'}, client, resolve, reject);
+          return attsend({'status': 'unliked', 'likes': 12}, client, resolve, reject);
         case 'myprof': // TODO: during beta, not implemented
         default:
           return replyerr('Unrecognized action keyword.', client, reject);
