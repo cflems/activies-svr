@@ -108,7 +108,7 @@ function process (dobj, client) {
           });
         case 'show':
           return valauthkey(dobj.authkey).then(function (uid) {
-            return query('SELECT posts.title, posts.location, posts.pic, posts.description, (SELECT COUNT(1) FROM likes WHERE likes.pid = posts.id) AS likes, EXISTS(SELECT 1 FROM likes WHERE likes.uid = ? AND likes.pid = posts.id) AS i_liked FROM posts WHERE posts.id = ? LIMIT 1', [uid, dobj.id]).then(function (result) {
+            return query('SELECT posts.id, posts.title, posts.location, posts.pic, posts.description, (SELECT COUNT(1) FROM likes WHERE likes.pid = posts.id) AS likes, EXISTS(SELECT 1 FROM likes WHERE likes.uid = ? AND likes.pid = posts.id) AS i_liked FROM posts WHERE posts.id = ? LIMIT 1', [uid, dobj.id]).then(function (result) {
               if (result.length < 1) return attsend({}, client, resolve, reject);
               attsend(result[0], client, resolve, reject);
             });
@@ -116,11 +116,23 @@ function process (dobj, client) {
             replyerr(e, client, reject);
           });
         case 'like':
-          // TODO: do this
-          return attsend({'status': 'liked', 'likes': 13}, client, resolve, reject);
+          return valauthkey(dobj.authkey).then(function (uid) {
+            return query('INSERT INTO likes (uid, pid) VALUES ? ON DUPLICATE KEY UPDATE id=id', [[[uid, dobj.id]]]).then(function () {
+              return query('SELECT COUNT(1) AS counter FROM likes WHERE pid = ?', [dobj.id]).then(function (result) {
+                if (result.length < 1) return reject('Failed to retrieve like count for post.');
+                return attsend({'status': 'liked', 'likes': result[0].counter}, client, resolve, reject);
+              });
+            });
+          });
         case 'unlike':
-          // TODO: also do this
-          return attsend({'status': 'unliked', 'likes': 12}, client, resolve, reject);
+          return valauthkey(dobj.authkey).then(function (uid) {
+            return query('DELETE FROM likes WHERE uid = ? AND pid = ?', [uid, dobj.id]).then(function () {
+              return query('SELECT COUNT(1) AS counter FROM likes WHERE pid = ?', [dobj.id]).then(function (result) {
+                if (result.length < 1) return reject('Failed to retrieve like count for post.');
+                return attsend({'status': 'unliked', 'likes': result[0].counter}, client, resolve, reject);
+              });
+            });
+          });
         case 'myprof': // TODO: during beta, not implemented
         default:
           return replyerr('Unrecognized action keyword.', client, reject);
